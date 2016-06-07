@@ -21,19 +21,32 @@ resource "digitalocean_droplet" "etcd" {
     private_key = "${file("${var.private_key}")}"
   }
 
-  /* provisioner "local-exec" { */
-  /*   command = "${digitalocean_droplet.etcd.module_path}/generate_and_sign_cert.sh hi hi" */
-  /*   command = "./generate_and_sign_cert.sh hi hi" */
-  /* } */
-
-  provisioner "file" {
-    source = "${path.module}/../certs"
-    destination = "/etc/ssl"
-  }
-
   /* provisioner "remote-exec" { */
   /*   inline = [ */
-  /*     "cp ~/test.txt ~/foo.txt" */
+  /*     "mkdir -p ~/etc/ssl", */
+  /*     "mkdir -p ~/etc/bin" */
+  /*   ] */
+  /* } */
+  /*  */
+  /* provisioner "file" { */
+  /*   source = "./certs" */
+  /*   destination = "~/etc/ssl" */
+  /* } */
+  /*  */
+  /* provisioner "file" { */
+  /*   source = "./etcd/generate_and_sign_cert.sh" */
+  /*   destination = "~/etc/bin/generate_and_sign_cert.sh" */
+  /* } */
+  /*  */
+  /* provisioner "remote-exec" { */
+  /*   inline = [ */
+  /*     "export PATH=$PATH:~/etc/bin", */
+  /*     "curl -s -L -o ~/etc/bin/cfssl https://pkg.cfssl.org/R1.1/cfssl_linux-amd64", */
+  /*     "curl -s -L -o ~/etc/bin/cfssljson https://pkg.cfssl.org/R1.1/cfssljson_linux-amd64", */
+  /*     "chmod +x ~/etc/bin/cfssl", */
+  /*     "chmod +x ~/etc/bin/cfssljson", */
+  /*     "chmod +x ~/etc/bin/generate_and_sign_cert.sh", */
+  /*     "~/etc/bin/generate_and_sign_cert.sh ${self.name} ${digitalocean_droplet.etcd.ipv4_address}" */
   /*   ] */
   /* } */
 }
