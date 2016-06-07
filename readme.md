@@ -1,11 +1,15 @@
 # Kubernetes on DigitalOcean using Terraform
 
+## Packer
+
+Packer is used to build images.
+
 ## Prereqs
 
 - [hbs-templater](https://github.com/esayemm/hbs-templater) `npm i -g hbs-templater`
 - [cfssl](https://github.com/cloudflare/cfssl)
 - [terraform](https://www.terraform.io/downloads.html)
-
+- [packer](https://www.packer.io/downloads.html)
 
 Create a `terraform.tfvars` file in project root and replace values.
 

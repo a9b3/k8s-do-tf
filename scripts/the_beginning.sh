@@ -3,6 +3,20 @@ parent_path=$( cd "$(dirname "${BASH_SOURCE}")" ; pwd -P )
 cd "$parent_path"
 
 ###############################################################################
+# ca-key.pem ca.pem
+###############################################################################
+echo ""
+echo "Creating ca-key.pem, ca.pem ..."
+echo ""
+
+rm -rf ../certs
+mkdir -p ../certs
+
+cd ../certs
+cfssl gencert -initca ../scripts/ca-csr.json | cfssljson -bare ca -
+cd ../scripts
+
+###############################################################################
 # clean slate
 ###############################################################################
 cd ../
