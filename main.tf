@@ -1,14 +1,13 @@
 variable "do_token" {}
 variable "ssh_fingerprint" {}
-variable "private_key" {}
 
-variable "etcd_discovery_token" {}
 variable "etcd_count" {}
-variable "k8s_version" {}
+variable "etcd_discovery_token" {}
 variable "k8s_master_count" {}
 variable "k8s_minion_count" {}
 variable "k8s_service_ip" {}
 variable "k8s_service_ip_range" {}
+variable "k8s_version" {}
 variable "pod_network" {}
 
 provider "digitalocean" {
@@ -29,9 +28,9 @@ resource "template_file" "etcd" {
 
 module "etcd" {
   source = "./etcd"
-  ssh_fingerprint = "${var.ssh_fingerprint}"
+
   count = "${var.etcd_count}"
-  private_key = "${var.private_key}"
+  ssh_fingerprint = "${var.ssh_fingerprint}"
   user_data = "${template_file.etcd.rendered}"
 }
 
@@ -58,10 +57,9 @@ resource "template_file" "k8s_master" {
 
 module "k8s_master" {
   source = "./k8s_master"
-  k8s_master_count = "${var.k8s_master_count}"
+
+  count = "${var.k8s_master_count}"
   ssh_fingerprint = "${var.ssh_fingerprint}"
-  private_key = "${var.private_key}"
-  etcd_ips = "${module.etcd.public_ips}"
   user_data = "${template_file.k8s_master.rendered}"
 }
 
@@ -88,10 +86,9 @@ resource "template_file" "k8s_minion" {
 
 module "k8s_minion" {
   source = "./k8s_minion"
-  k8s_minion_count = "${var.k8s_minion_count}"
+
+  count = "${var.k8s_minion_count}"
   ssh_fingerprint = "${var.ssh_fingerprint}"
-  private_key = "${var.private_key}"
-  etcd_ips = "${module.etcd.public_ips}"
   user_data = "${template_file.k8s_minion.rendered}"
 }
 

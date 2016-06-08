@@ -1,13 +1,11 @@
+variable "count" {}
 variable "ssh_fingerprint" {}
-variable "private_key" {}
-variable "etcd_ips" {}
 variable "user_data" {}
-variable "k8s_master_count" {}
 
 resource "digitalocean_droplet" "k8s_master" {
-  count = "${var.k8s_master_count}"
+  count = "${var.count}"
   image = "coreos-stable"
-  name = "k8s-master"
+  name = "k8s-master-${count.index}"
   region = "sfo1"
   size = "512mb"
   private_networking = true

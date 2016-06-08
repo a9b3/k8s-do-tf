@@ -1,7 +1,6 @@
-variable "ssh_fingerprint" {}
-variable "private_key" {}
-variable "user_data" {}
 variable "count" {}
+variable "ssh_fingerprint" {}
+variable "user_data" {}
 
 resource "digitalocean_droplet" "etcd" {
   count = "${var.count}"
