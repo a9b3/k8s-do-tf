@@ -4,11 +4,11 @@
 hostname: k8s_master
 
 write-files:
-  - path: ~/etc/ssl/certs/ca.pem
+  - path: /etc/ssl/certs/ca.pem
     content: |
       ${replace(ca_pem, "\n", "\n      ")}
 
-  - path: ~/etc/ssl/certs/ca-key.pem
+  - path: /etc/ssl/certs/ca-key.pem
     content: |
       ${replace(ca_key_pem, "\n", "\n      ")}
 
@@ -168,10 +168,11 @@ coreos:
           --insecure-port=8080 \
           --kubelet-https=true \
           --secure-port=6443 \
-          --service-cluster-ip-range={{SERVICE_IP_RANGE}} \
-          --etcd-servers={{ETCD_CLUSTER_NODE_IPS}} \
+          --service-cluster-ip-range=${k8s_service_ip_range} \
+          --etcd-servers=${etcd_ips} \
           --bind-address=$${DEFAULT_IPV4} \
-          --logtostderr=true
+          --logtostderr=true \
+          --apiserver-count=${k8s_master_count}
         Restart=always
         RestartSec=10
 

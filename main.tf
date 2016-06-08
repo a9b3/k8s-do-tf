@@ -5,7 +5,9 @@ variable "private_key" {}
 variable "etcd_discovery_token" {}
 variable "etcd_count" {}
 variable "k8s_version" {}
+variable "k8s_master_count" {}
 variable "k8s_service_ip" {}
+variable "k8s_service_ip_range" {}
 variable "pod_network" {}
 
 provider "digitalocean" {
@@ -41,10 +43,12 @@ resource "template_file" "k8s_master" {
 
   vars {
     k8s_version = "${var.k8s_version}"
+    k8s_master_count = "${var.k8s_master_count}"
     k8s_service_ip = "${var.k8s_service_ip}"
+    k8s_service_ip_range = "${var.k8s_service_ip_range}"
     etcd_discovery_token = "${var.etcd_discovery_token}"
     pod_network = "${var.pod_network}"
-    etcd_ips = "${module.etcd.public_ips}"
+    etcd_ips = "${join(",", formatlist("http://%s:2379", split(",", module.etcd.public_ips)))}"
 
     ca_pem = "${file("${path.module}/certs/ca.pem")}"
     ca_key_pem = "${file("${path.module}/certs/ca-key.pem")}"
@@ -53,6 +57,7 @@ resource "template_file" "k8s_master" {
 
 module "k8s_master" {
   source = "./k8s_master"
+  k8s_master_count = "${var.k8s_master_count}"
   ssh_fingerprint = "${var.ssh_fingerprint}"
   private_key = "${var.private_key}"
   etcd_ips = "${module.etcd.public_ips}"
@@ -61,4 +66,4 @@ module "k8s_master" {
 
 /* output "template" { value = "${template_file.k8s_master.rendered}" } */
 output "etcd_ips" { value = "${module.etcd.public_ips}" }
-output "k8s_ip" { value = "${module.k8s_master.public_ip}" }
+output "k8s_ip" { value = "${module.k8s_master.public_ips}" }
