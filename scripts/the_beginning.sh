@@ -11,6 +11,20 @@ terraform destroy
 cd scripts
 
 ###############################################################################
+# ca-key.pem ca.pem
+###############################################################################
+echo ""
+echo "Creating ca-key.pem, ca.pem ..."
+echo ""
+
+rm -rf ../certs
+mkdir -p ../certs
+
+cd ../certs
+cfssl gencert -initca ../scripts/ca-csr.json | cfssljson -bare ca -
+cd ../scripts
+
+###############################################################################
 # config.env file
 ###############################################################################
 
