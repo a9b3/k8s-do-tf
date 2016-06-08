@@ -4,6 +4,12 @@
 hostname: k8s_master
 
 write-files:
+  - path: ~/etc/ssl/certs/ca.pem
+    content: |
+      ${ca_pem}
+  - path: ~/etc/ssl/certs/ca-key.pem
+    content: |
+      ${ca_key_pem}
   # Used by openssl to generate apiserver-key
   - path: /etc/ssl/certs/openssl.cnf
     content: |
@@ -22,16 +28,19 @@ write-files:
       DNS.4 = kubernetes.default.svc.cluster.local
       IP.1 = ${k8s_service_ip}
       IP.2 = $ENV::MASTER_IP
-
   - path: /opt/bin/generate-certs.sh
     permission: '0755'
     content: |
       #!/bin/bash
       # generate-certs
       #
+      # Requires
+      #
+      # ca.pem
+      # ca-key.pem
+      #
       # Env Var
       # MASTER_IP
-
       if [ ! -f /etc/ssl/certs/apiserver-key.pem ]; then
         /usr/bin/mkdir -p /etc/ssl/certs/
         /usr/bin/openssl genrsa -out /etc/ssl/certs/apiserver-key.pem 2048

@@ -101,16 +101,16 @@ echo ""
 
 echo "Running Terraform ..."
 
-# terraform plan \
-#   -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
-#   -var "etcd_count=$ETCD_CLUSTER_SIZE" \
-#   -var "k8s_version=$K8S_VERSION" \
-#   -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
-#   -var "pod_network=$POD_NETWORK"
-#
-# terraform apply \
-#   -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
-#   -var "etcd_count=$ETCD_CLUSTER_SIZE" \
-#   -var "k8s_version=$K8S_VERSION" \
-#   -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
-#   -var "pod_network=$POD_NETWORK"
+terraform plan \
+  -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
+  -var "etcd_count=$ETCD_CLUSTER_SIZE" \
+  -var "k8s_version=$K8S_VERSION" \
+  -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
+  -var "pod_network=$POD_NETWORK"
+
+terraform apply \
+  -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
+  -var "etcd_count=$ETCD_CLUSTER_SIZE" \
+  -var "k8s_version=$K8S_VERSION" \
+  -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
+  -var "pod_network=$POD_NETWORK"

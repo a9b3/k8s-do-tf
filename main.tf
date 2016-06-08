@@ -45,6 +45,9 @@ resource "template_file" "k8s_master" {
     etcd_discovery_token = "${var.etcd_discovery_token}"
     pod_network = "${var.pod_network}"
     etcd_ips = "${module.etcd.public_ips}"
+
+    ca_pem = "${file("${path.module}/certs/ca.pem")}"
+    ca_key_pem = "${file("${path.module}/certs/ca-key.pem")}"
   }
 }
 
