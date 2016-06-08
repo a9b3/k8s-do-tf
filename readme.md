@@ -27,6 +27,7 @@ This will create terraform.tfvars
 ### Spin up nodes 
 
 ```sh
+terraform get
 terraform plan
 terraform apply
 ```
