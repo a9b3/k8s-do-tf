@@ -3,22 +3,9 @@ parent_path=$( cd "$(dirname "${BASH_SOURCE}")" ; pwd -P )
 cd "$parent_path"
 
 ###############################################################################
-# ca-key.pem ca.pem
-###############################################################################
-echo ""
-echo "Creating ca-key.pem, ca.pem ..."
-echo ""
-
-rm -rf ../certs
-mkdir -p ../certs
-
-cd ../certs
-cfssl gencert -initca ../scripts/ca-csr.json | cfssljson -bare ca -
-cd ../scripts
-
-###############################################################################
 # clean slate
 ###############################################################################
+
 cd ../
 terraform destroy
 cd scripts
@@ -26,6 +13,7 @@ cd scripts
 ###############################################################################
 # config.env file
 ###############################################################################
+
 echo ""
 ETCD_CLUSTER_SIZE=2
 MASTER_CLUSTER_SIZE=1
@@ -88,10 +76,14 @@ hbs-templater compile --params "$ETCD_PARAMS" \
   --output ../etcd \
   -l --overwrite
 
+###############################################################################
+# Terraform
+###############################################################################
+
 echo ""
-echo "Creating etcd nodes..."
+echo "Terraform creating nodes..."
 echo ""
 cd ../
 terraform plan
-terraform apply -var "count=$ETCD_CLUSTER_SIZE"
+terraform apply -var "etcd_count=$ETCD_CLUSTER_SIZE"
 cd scripts

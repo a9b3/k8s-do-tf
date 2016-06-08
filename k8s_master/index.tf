@@ -1,13 +1,10 @@
 variable "ssh_fingerprint" {}
 variable "private_key" {}
-variable "count" {
-  default = "2"
-}
+variable "etcd_ips" {}
 
-resource "digitalocean_droplet" "etcd" {
-  count = "${var.count}"
+resource "digitalocean_droplet" "k8s_master" {
   image = "coreos-stable"
-  name = "etcd-${count.index}"
+  name = "k8s_master"
   region = "sfo1"
   size = "512mb"
   private_networking = true
@@ -17,4 +14,4 @@ resource "digitalocean_droplet" "etcd" {
   user_data = "${file("${path.module}/user-data")}"
 }
 
-output "public_ips" { value = "${join(",", digitalocean_droplet.etcd.*.ipv4_address)}" }
+output "public_ip" { value = "${digitalocean_droplet.k8s_master.ipv4_address}" }
