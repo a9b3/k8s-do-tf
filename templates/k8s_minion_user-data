@@ -12,7 +12,7 @@ write-files:
     content: |
       ${replace(ca_key_pem, "\n", "\n      ")}
 
-  - path: /etc/kubernetes/ssl/openssl.cnf
+  - path: /etc/ssl/certs/openssl.cnf
     content: |
       [req]
       req_extensions = v3_req
@@ -35,21 +35,21 @@ write-files:
       # WORKER_IP
       # WORKER_FQDN
 
-      if [ ! -f /etc/kubernetes/ssl/$WORKER_FQDN-worker.pem ]; then
-        /usr/bin/mkdir -p /etc/kubernetes/ssl
-        /usr/bin/openssl genrsa -out /etc/kubernetes/ssl/$WORKER_FQDN-worker-key.pem 2048
-        /usr/bin/openssl req -new -key /etc/kubernetes/ssl/$WORKER_FQDN-worker-key.pem \
-          -out /etc/kubernetes/ssl/$WORKER_FQDN-worker.csr \
+      if [ ! -f /etc/ssl/certs/$WORKER_FQDN-worker.pem ]; then
+        /usr/bin/mkdir -p /etc/ssl/certs
+        /usr/bin/openssl genrsa -out /etc/ssl/certs/$WORKER_FQDN-worker-key.pem 2048
+        /usr/bin/openssl req -new -key /etc/ssl/certs/$WORKER_FQDN-worker-key.pem \
+          -out /etc/ssl/certs/$WORKER_FQDN-worker.csr \
           -subj "/CN=$WORKER_FQDN" \
-          -config /etc/kubernetes/ssl/openssl.cnf
-        /usr/bin/openssl x509 -req -in /etc/kubernetes/ssl/$WORKER_FQDN-worker.csr \
-          -CA /etc/kubernetes/ssl/ca.pem \
-          -CAkey /etc/kubernetes/ssl/ca-key.pem \
+          -config /etc/ssl/certs/openssl.cnf
+        /usr/bin/openssl x509 -req -in /etc/ssl/certs/$WORKER_FQDN-worker.csr \
+          -CA /etc/ssl/certs/ca.pem \
+          -CAkey /etc/ssl/certs/ca-key.pem \
           -CAcreateserial \
-          -out /etc/kubernetes/ssl/$WORKER_FQDN-worker.pem \
+          -out /etc/ssl/certs/$WORKER_FQDN-worker.pem \
           -days 365 \
           -extensions v3_req \
-          -extfile /etc/kubernetes/ssl/openssl.cnf
+          -extfile /etc/ssl/certs/openssl.cnf
       fi
 
   - path: /opt/bin/wupiao
@@ -59,19 +59,17 @@ write-files:
       # [w]ait [u]ntil [p]ort [i]s [a]ctually [o]pen
       [ -n "$1" ] && [ -n "$2" ] && while ! curl --output /dev/null \
         --silent --head --fail \
-        http://${1}:${2}; do sleep 1 && echo -n .; done;
+        http://$${1}:$${2}; do sleep 1 && echo -n .; done;
       exit $?
   - path: /etc/flannel/options.env
     content: |
       FLANNELD_IFACE=$public_ipv4
-      FLANNELD_ETCD_ENDPOINTS={{ETCD_CLUSTER_NODE_IPS}}
+      FLANNELD_ETCD_ENDPOINTS=${etcd_ips}
 
 coreos:
   etcd2:
     #generate a new token for each unique cluster from https://discovery.etcd.io/new
-    {{#if ETCD_DISCOVERY_TOKEN}}
-    discovery: https://discovery.etcd.io/{{ETCD_DISCOVERY_TOKEN}}
-    {{/if}}
+    discovery: https://discovery.etcd.io/${etcd_discovery_token}
     # multi-region and multi-cloud deployments need to use $public_ipv4
     advertise-client-urls: http://$public_ipv4:2379
     initial-advertise-peer-urls: http://$private_ipv4:2380
@@ -80,7 +78,7 @@ coreos:
     listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
     listen-peer-urls: http://$private_ipv4:2380,http://$private_ipv4:7001
   fleet:
-    etcd_servers: {{ETCD_CLUSTER_NODE_IPS}}
+    etcd_servers: ${etcd_ips}
     metadata: role=kubernetes-minion
     public-ip: $public_ipv4
   flannel:
@@ -148,12 +146,12 @@ coreos:
         ExecStartPre=/usr/bin/curl -L \
           -o /opt/bin/kube-proxy \
           -z /opt/bin/kube-proxy \
-          https://storage.googleapis.com/kubernetes-release/release/{{K8S_VERSION}}/bin/linux/amd64/kube-proxy
+          https://storage.googleapis.com/kubernetes-release/release/${k8s_version}/bin/linux/amd64/kube-proxy
         ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-proxy
         # wait for kubernetes master to be up and ready
-        ExecStartPre=/opt/bin/wupiao {{MASTER_IP}} 8080
+        ExecStartPre=/opt/bin/wupiao ${master_ip} 8080
         ExecStart=/opt/bin/kube-proxy \
-          --master=http://{{MASTER_IP}}:8080 \
+          --master=http://${master_ip}:8080 \
           --proxy-mode=iptables \
           --logtostderr=true
         Restart=always
@@ -175,24 +173,24 @@ coreos:
         ExecStartPre=/usr/bin/curl -L \
           -o /opt/bin/kubelet \
           -z /opt/bin/kubelet \
-          https://storage.googleapis.com/kubernetes-release/release/{{K8S_VERSION}}/bin/linux/amd64/kubelet
+          https://storage.googleapis.com/kubernetes-release/release/${k8s_version}/bin/linux/amd64/kubelet
         ExecStartPre=/usr/bin/chmod +x /opt/bin/kubelet
         # wait for kubernetes master to be up and ready
-        ExecStartPre=/opt/bin/wupiao {{MASTER_IP}} 8080
+        ExecStartPre=/opt/bin/wupiao ${master_ip} 8080
         ExecStart=/opt/bin/kubelet \
           --address=0.0.0.0 \
           --allow-privileged=true \
-          --api-servers=http://{{MASTER_IP}}:8080 \
+          --api-servers=http://${master_ip}:8080 \
           --cadvisor-port=4194 \
-          --cluster-dns={{DNS_SERVICE_IP}} \
+          --cluster-dns=${dns_service_ip} \
           --cluster-domain=cluster.local \
           --healthz-bind-address=0.0.0.0 \
           --healthz-port=10248 \
-          --hostname-override=${WORKER_IP} \
+          --hostname-override=$${WORKER_IP} \
           --logtostderr=true \
           --port=10250 \
           --register-node=true \
-          --tls-cert-file=/etc/kubernetes/ssl/${WORKER_FQDN}-worker.pem \
-          --tls-private-key-file=/etc/kubernetes/ssl/${WORKER_FQDN}-worker-key.pem
+          --tls-cert-file=/etc/ssl/certs/$${WORKER_FQDN}-worker.pem \
+          --tls-private-key-file=/etc/ssl/certs/$${WORKER_FQDN}-worker-key.pem
         Restart=always
         RestartSec=10

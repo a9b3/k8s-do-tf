@@ -1,6 +1,7 @@
 variable "do_token" {}
 variable "ssh_fingerprint" {}
 
+variable "dns_service_ip" {}
 variable "etcd_count" {}
 variable "etcd_discovery_token" {}
 variable "k8s_master_count" {}
@@ -42,16 +43,16 @@ resource "template_file" "k8s_master" {
   template = "${file("${path.module}/templates/k8s_master_user-data")}"
 
   vars {
-    k8s_version = "${var.k8s_version}"
+    etcd_discovery_token = "${var.etcd_discovery_token}"
+    etcd_ips = "${join(",", formatlist("http://%s:2379", split(",", module.etcd.public_ips)))}"
     k8s_master_count = "${var.k8s_master_count}"
     k8s_service_ip = "${var.k8s_service_ip}"
     k8s_service_ip_range = "${var.k8s_service_ip_range}"
-    etcd_discovery_token = "${var.etcd_discovery_token}"
+    k8s_version = "${var.k8s_version}"
     pod_network = "${var.pod_network}"
-    etcd_ips = "${join(",", formatlist("http://%s:2379", split(",", module.etcd.public_ips)))}"
 
-    ca_pem = "${file("${path.module}/certs/ca.pem")}"
     ca_key_pem = "${file("${path.module}/certs/ca-key.pem")}"
+    ca_pem = "${file("${path.module}/certs/ca.pem")}"
   }
 }
 
@@ -71,13 +72,15 @@ resource "template_file" "k8s_minion" {
   template = "${file("${path.module}/templates/k8s_minion_user-data")}"
 
   vars {
-    k8s_version = "${var.k8s_version}"
+    dns_service_ip = "${var.dns_service_ip}"
+    etcd_discovery_token = "${var.etcd_discovery_token}"
+    etcd_ips = "${join(",", formatlist("http://%s:2379", split(",", module.etcd.public_ips)))}"
     k8s_minion_count = "${var.k8s_minion_count}"
     k8s_service_ip = "${var.k8s_service_ip}"
     k8s_service_ip_range = "${var.k8s_service_ip_range}"
-    etcd_discovery_token = "${var.etcd_discovery_token}"
+    k8s_version = "${var.k8s_version}"
+    master_ip = "${module.k8s_master.public_ips}"
     pod_network = "${var.pod_network}"
-    etcd_ips = "${join(",", formatlist("http://%s:2379", split(",", module.etcd.public_ips)))}"
 
     ca_pem = "${file("${path.module}/certs/ca.pem")}"
     ca_key_pem = "${file("${path.module}/certs/ca-key.pem")}"
