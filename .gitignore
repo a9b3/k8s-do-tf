@@ -2,4 +2,4 @@
 *.tfstate*
 certs
 .terraform
-cluster_config
+cluster_config_compiled

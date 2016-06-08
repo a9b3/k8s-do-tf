@@ -2,6 +2,21 @@
 # Run from project root directory
 
 ###############################################################################
+# $CLEAN_SLATE
+###############################################################################
+
+if [ $CLEAN_SLATE ]; then
+  echo ""
+
+  echo "CLEAN_SLATE set to true, removing certs and cluster_config_compiled ..."
+  rm -rf certs
+  rm -rf cluster_config_compiled
+
+  echo ""
+fi
+
+
+###############################################################################
 # ca-key.pem ca.pem
 ###############################################################################
 echo ""
@@ -27,9 +42,9 @@ echo ""
 ###############################################################################
 echo ""
 
-if [ -e ./cluster_config ]; then
-  echo "cluster_config already exists using existing values ..."
-  source ./cluster_config
+if [ -e ./cluster_config_compiled ]; then
+  echo "cluster_config_compiled already exists using existing values ..."
+  source ./cluster_config_compiled/cluster_config
 else
 
   # !IMPORTANT
@@ -72,7 +87,7 @@ else
   echo "$PARAMS"
   hbs-templater compile --params "$PARAMS" \
     --input ./cluster_config_tpl \
-    --output . \
+    --output ./cluster_config_compiled \
     -l --overwrite
 
 fi
@@ -86,16 +101,16 @@ echo ""
 
 echo "Running Terraform ..."
 
-terraform plan \
-  -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
-  -var "etcd_count=$ETCD_CLUSTER_SIZE" \
-  -var "k8s_version=$K8S_VERSION" \
-  -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
-  -var "pod_network=$POD_NETWORK"
-
-terraform apply \
-  -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
-  -var "etcd_count=$ETCD_CLUSTER_SIZE" \
-  -var "k8s_version=$K8S_VERSION" \
-  -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
-  -var "pod_network=$POD_NETWORK"
+# terraform plan \
+#   -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
+#   -var "etcd_count=$ETCD_CLUSTER_SIZE" \
+#   -var "k8s_version=$K8S_VERSION" \
+#   -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
+#   -var "pod_network=$POD_NETWORK"
+#
+# terraform apply \
+#   -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
+#   -var "etcd_count=$ETCD_CLUSTER_SIZE" \
+#   -var "k8s_version=$K8S_VERSION" \
+#   -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
+#   -var "pod_network=$POD_NETWORK"
