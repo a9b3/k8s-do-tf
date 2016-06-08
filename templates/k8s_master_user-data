@@ -168,7 +168,7 @@ coreos:
           --secure-port=6443 \
           --service-cluster-ip-range={{SERVICE_IP_RANGE}} \
           --etcd-servers={{ETCD_CLUSTER_NODE_IPS}} \
-          --bind-address=${DEFAULT_IPV4} \
+          --bind-address=$${DEFAULT_IPV4} \
           --logtostderr=true
         Restart=always
         RestartSec=10
