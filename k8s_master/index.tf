@@ -5,7 +5,7 @@ variable "user_data" {}
 
 resource "digitalocean_droplet" "k8s_master" {
   image = "coreos-stable"
-  name = "k8s_master"
+  name = "k8s-master"
   region = "sfo1"
   size = "512mb"
   private_networking = true

@@ -95,22 +95,47 @@ fi
 echo ""
 
 ###############################################################################
-# clean slate
+# Wrap terraform commands
 ###############################################################################
-echo ""
 
-echo "Running Terraform ..."
+COMMAND=$1
 
-terraform plan \
-  -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
-  -var "etcd_count=$ETCD_CLUSTER_SIZE" \
-  -var "k8s_version=$K8S_VERSION" \
-  -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
-  -var "pod_network=$POD_NETWORK"
+if [[ $COMMAND == plan ]]; then
+  terraform plan \
+    -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
+    -var "etcd_count=$ETCD_CLUSTER_SIZE" \
+    -var "k8s_version=$K8S_VERSION" \
+    -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
+    -var "pod_network=$POD_NETWORK"
+  exit
+fi
 
-terraform apply \
-  -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
-  -var "etcd_count=$ETCD_CLUSTER_SIZE" \
-  -var "k8s_version=$K8S_VERSION" \
-  -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
-  -var "pod_network=$POD_NETWORK"
+if [[ $COMMAND == apply ]]; then
+  terraform apply \
+    -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
+    -var "etcd_count=$ETCD_CLUSTER_SIZE" \
+    -var "k8s_version=$K8S_VERSION" \
+    -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
+    -var "pod_network=$POD_NETWORK"
+  exit
+fi
+
+if [[ $COMMAND == destroy ]]; then
+  terraform destroy \
+    -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
+    -var "etcd_count=$ETCD_CLUSTER_SIZE" \
+    -var "k8s_version=$K8S_VERSION" \
+    -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
+    -var "pod_network=$POD_NETWORK"
+  exit
+fi
+
+if [[ $COMMAND == graph ]]; then
+  terraform graph \
+    -var "etcd_discovery_token=$ETCD_DISCOVERY_TOKEN" \
+    -var "etcd_count=$ETCD_CLUSTER_SIZE" \
+    -var "k8s_version=$K8S_VERSION" \
+    -var "k8s_service_ip=$KUBERNETES_SERVICE_IP" \
+    -var "pod_network=$POD_NETWORK"
+  exit
+fi

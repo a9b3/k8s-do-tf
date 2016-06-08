@@ -59,5 +59,6 @@ module "k8s_master" {
   user_data = "${template_file.k8s_master.rendered}"
 }
 
+/* output "template" { value = "${template_file.k8s_master.rendered}" } */
 output "etcd_ips" { value = "${module.etcd.public_ips}" }
 output "k8s_ip" { value = "${module.k8s_master.public_ip}" }
