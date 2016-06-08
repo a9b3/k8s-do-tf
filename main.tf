@@ -6,6 +6,7 @@ variable "etcd_discovery_token" {}
 variable "etcd_count" {}
 variable "k8s_version" {}
 variable "k8s_master_count" {}
+variable "k8s_minion_count" {}
 variable "k8s_service_ip" {}
 variable "k8s_service_ip_range" {}
 variable "pod_network" {}
@@ -64,6 +65,37 @@ module "k8s_master" {
   user_data = "${template_file.k8s_master.rendered}"
 }
 
+/*****************************************************************************
+ *  k8s_minion
+ ****************************************************************************/
+
+resource "template_file" "k8s_minion" {
+  template = "${file("${path.module}/templates/k8s_minion_user-data")}"
+
+  vars {
+    k8s_version = "${var.k8s_version}"
+    k8s_minion_count = "${var.k8s_minion_count}"
+    k8s_service_ip = "${var.k8s_service_ip}"
+    k8s_service_ip_range = "${var.k8s_service_ip_range}"
+    etcd_discovery_token = "${var.etcd_discovery_token}"
+    pod_network = "${var.pod_network}"
+    etcd_ips = "${join(",", formatlist("http://%s:2379", split(",", module.etcd.public_ips)))}"
+
+    ca_pem = "${file("${path.module}/certs/ca.pem")}"
+    ca_key_pem = "${file("${path.module}/certs/ca-key.pem")}"
+  }
+}
+
+module "k8s_minion" {
+  source = "./k8s_minion"
+  k8s_minion_count = "${var.k8s_minion_count}"
+  ssh_fingerprint = "${var.ssh_fingerprint}"
+  private_key = "${var.private_key}"
+  etcd_ips = "${module.etcd.public_ips}"
+  user_data = "${template_file.k8s_minion.rendered}"
+}
+
 /* output "template" { value = "${template_file.k8s_master.rendered}" } */
 output "etcd_ips" { value = "${module.etcd.public_ips}" }
-output "k8s_ip" { value = "${module.k8s_master.public_ips}" }
+output "k8s_master_ips" { value = "${module.k8s_master.public_ips}" }
+output "k8s_minion_ips" { value = "${module.k8s_minion.public_ips}" }
