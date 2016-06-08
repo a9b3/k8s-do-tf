@@ -1,0 +1,207 @@
+#cloud-config
+# vim: set ft=yaml:
+
+hostname: k8s_master
+
+write-files:
+  # Used by openssl to generate apiserver-key
+  - path: /etc/ssl/certs/openssl.cnf
+    content: |
+      [req]
+      req_extensions = v3_req
+      distinguished_name = req_distinguished_name
+      [req_distinguished_name]
+      [ v3_req ]
+      basicConstraints = CA:FALSE
+      keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+      subjectAltName = @alt_names
+      [alt_names]
+      DNS.1 = kubernetes
+      DNS.2 = kubernetes.default
+      DNS.3 = kubernetes.default.svc
+      DNS.4 = kubernetes.default.svc.cluster.local
+      IP.1 = ${k8s_service_ip}
+      IP.2 = $ENV::MASTER_IP
+
+  - path: /opt/bin/generate-certs.sh
+    permission: '0755'
+    content: |
+      #!/bin/bash
+      # generate-certs
+      #
+      # Env Var
+      # MASTER_IP
+
+      if [ ! -f /etc/ssl/certs/apiserver-key.pem ]; then
+        /usr/bin/mkdir -p /etc/ssl/certs/
+        /usr/bin/openssl genrsa -out /etc/ssl/certs/apiserver-key.pem 2048
+        /usr/bin/openssl req -new -key /etc/ssl/certs/apiserver-key.pem \
+          -out /etc/ssl/certs/apiserver.csr \
+          -subj "/CN=kube-apiserver" \
+          -config /etc/ssl/certs/openssl.cnf
+        /usr/bin/openssl x509 -req -in /etc/ssl/certs/apiserver.csr \
+          -CA /etc/ssl/certs/ca.pem \
+          -CAkey /etc/ssl/certs/ca-key.pem \
+          -CAcreateserial \
+          -out /etc/ssl/certs/apiserver.pem \
+          -days 365 \
+          -extensions v3_req \
+          -extfile /etc/ssl/certs/openssl.cnf
+      fi
+
+coreos:
+  etcd2:
+    #generate a new token for each unique cluster from https://discovery.etcd.io/new
+    discovery: https://discovery.etcd.io/${etcd_discovery_token}
+    # multi-region and multi-cloud deployments need to use $public_ipv4
+    advertise-client-urls: http://$public_ipv4:2379
+    initial-advertise-peer-urls: http://$private_ipv4:2380
+    # listen on both the official ports and the legacy ports
+    # legacy ports can be omitted if your application doesn't depend on them
+    listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    listen-peer-urls: http://$private_ipv4:2380,http://$private_ipv4:7001
+  fleet:
+    etcd_servers: ${etcd_ips}
+    metadata: role=k8s_master
+    public-ip: $public_ipv4
+  flannel:
+    interface: $public_ipv4
+  units:
+    - name: etcd2.service
+      command: start
+    - name: fleet.service
+      command: start
+    - name: flanneld.service
+      drop-ins:
+      - name: 50-network-config.conf
+        content: |
+          [Unit]
+          Requires=etcd2.service
+
+          [Service]
+          ExecStartPre=/usr/bin/etcdctl set /coreos.com/network/config '{ "Network": "${pod_network}" }'
+      command: start
+
+    - name: setup-network-environment.service
+      command: start
+      content: |
+        [Unit]
+        Description=Setup Network Environment
+        Documentation=https://github.com/kelseyhightower/setup-network-environment
+        Requires=network-online.target
+        After=network-online.target
+
+        [Service]
+        ExecStartPre=-/usr/bin/mkdir -p /opt/bin
+        ExecStartPre=/usr/bin/curl -L \
+          -o /opt/bin/setup-network-environment \
+          -z /opt/bin/setup-network-environment \
+          https://github.com/kelseyhightower/setup-network-environment/releases/download/v1.0.0/setup-network-environment
+        ExecStartPre=/usr/bin/chmod +x /opt/bin/setup-network-environment
+        ExecStart=/opt/bin/setup-network-environment
+        RemainAfterExit=yes
+        Type=oneshot
+
+    - name: generate-certs.service
+      command: start
+      content: |
+        [Unit]
+        Description=Generate master certs
+
+        [Service]
+        Environment="HOME=/root"
+        Environment=MASTER_IP=$public_ipv4
+        ExecStart=/opt/bin/generate-certs.sh
+        RemainAfterExit=yes
+        Type=oneshot
+
+    - name: download-kubernetes-binaries.service
+      command: start
+      content: |
+        [Unit]
+        Description=Download Kubernetes Binaries
+
+        [Service]
+        ExecStartPre=/usr/bin/mkdir -p /opt/bin
+        ExecStartPre=/usr/bin/curl -L \
+          -o /opt/bin/kubectl \
+          -z /opt/bin/kubectl \
+          https://storage.googleapis.com/kubernetes-release/release/${k8s_version}/bin/linux/amd64/kubectl
+        ExecStart=/usr/bin/chmod -R +x /opt/bin
+
+    - name: kube-apiserver.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes Api Server
+        Requires=etcd2.service fleet.service flanneld.service docker.service generate-certs.service download-kubernetes-binaries.service setup-network-environment.service
+        After=etcd2.service fleet.service flanneld.service docker.service generate-certs.service download-kubernetes-binaries.service setup-network-environment.service
+
+        [Service]
+        EnvironmentFile=/etc/network-environment
+        ExecStartPre=/usr/bin/mkdir -p /opt/bin
+        ExecStartPre=/usr/bin/curl -L \
+          -o /opt/bin/kube-apiserver \
+          -z /opt/bin/kube-apiserver \
+          https://storage.googleapis.com/kubernetes-release/release/${k8s_version}/bin/linux/amd64/kube-apiserver
+        ExecStartPre=/usr/bin/chmod -R +x /opt/bin/kube-apiserver
+        ExecStart=/opt/bin/kube-apiserver \
+          --tls-cert-file=/etc/ssl/certs/apiserver.pem \
+          --tls-private-key-file=/etc/ssl/certs/apiserver-key.pem \
+          # --service-account-key-file=/etc/ssl/certs/apiserver-key.pem \
+          --service-account-lookup=false \
+          --admission-control=NamespaceLifecycle,NamespaceAutoProvision,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota \
+          --runtime-config=api/v1 \
+          --allow-privileged=true \
+          --insecure-bind-address=0.0.0.0 \
+          --insecure-port=8080 \
+          --kubelet-https=true \
+          --secure-port=6443 \
+          --service-cluster-ip-range={{SERVICE_IP_RANGE}} \
+          --etcd-servers={{ETCD_CLUSTER_NODE_IPS}} \
+          --bind-address=${DEFAULT_IPV4} \
+          --logtostderr=true
+        Restart=always
+        RestartSec=10
+
+    - name: kube-controller-manager.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes Controller Manager
+        Requires=kube-apiserver.service
+        After=kube-apiserver.service
+
+        [Service]
+        ExecStartPre=/usr/bin/mkdir -p /opt/bin
+        ExecStartPre=/usr/bin/curl -L \
+          -o /opt/bin/kube-controller-manager \
+          -z /opt/bin/kube-controller-manager \
+          https://storage.googleapis.com/kubernetes-release/release/${k8s_version}/bin/linux/amd64/kube-controller-manager
+        ExecStartPre=/usr/bin/chmod -R +x /opt/bin/kube-controller-manager
+        ExecStart=/opt/bin/kube-controller-manager \
+          --service-account-private-key-file=/etc/ssl/certs/apiserver-key.pem \
+          --master=127.0.0.1:8080 \
+          --logtostderr=true
+        Restart=always
+        RestartSec=10
+
+    - name: kube-scheduler.service
+      command: start
+      content: |
+        [Unit]
+        Description=Kubernetes Scheduler
+        Requires=kube-apiserver.service
+        After=kube-apiserver.service
+
+        [Service]
+        ExecStartPre=/usr/bin/mkdir -p /opt/bin
+        ExecStartPre=/usr/bin/curl -L \
+          -o /opt/bin/kube-scheduler \
+          -z /opt/bin/kube-scheduler \
+          https://storage.googleapis.com/kubernetes-release/release/${k8s_version}/bin/linux/amd64/kube-scheduler
+        ExecStartPre=/usr/bin/chmod -R +x /opt/bin/kube-scheduler
+        ExecStart=/opt/bin/kube-scheduler \
+          --master=127.0.0.1:8080 \
+        Restart=always
+        RestartSec=10

@@ -1,8 +1,7 @@
 variable "ssh_fingerprint" {}
 variable "private_key" {}
-variable "count" {
-  default = "2"
-}
+variable "user_data" {}
+variable "count" {}
 
 resource "digitalocean_droplet" "etcd" {
   count = "${var.count}"
@@ -14,7 +13,7 @@ resource "digitalocean_droplet" "etcd" {
   ssh_keys = [
     "${var.ssh_fingerprint}"
   ]
-  user_data = "${file("${path.module}/user-data")}"
+  user_data = "${var.user_data}"
 }
 
 output "public_ips" { value = "${join(",", digitalocean_droplet.etcd.*.ipv4_address)}" }

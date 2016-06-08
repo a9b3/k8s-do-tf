@@ -6,7 +6,7 @@ hostname: etcd
 coreos:
   etcd2:
     #generate a new token for each unique cluster from https://discovery.etcd.io/new
-    discovery: https://discovery.etcd.io/437b736420271622267d69b14a2a170d
+    discovery: https://discovery.etcd.io/${etcd_discovery_token}
     # multi-region and multi-cloud deployments need to use $public_ipv4
     advertise-client-urls: http://$public_ipv4:2379
     initial-advertise-peer-urls: http://$private_ipv4:2380
