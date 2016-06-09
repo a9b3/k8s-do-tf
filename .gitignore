@@ -2,5 +2,4 @@
 *.tfstate*
 certs
 .terraform
-cluster_config_compiled
 .srl
