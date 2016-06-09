@@ -95,7 +95,6 @@ module "k8s_minion" {
   user_data = "${template_file.k8s_minion.rendered}"
 }
 
-/* output "template" { value = "${template_file.k8s_master.rendered}" } */
 output "etcd_ips" { value = "${module.etcd.public_ips}" }
 output "k8s_master_ips" { value = "${module.k8s_master.public_ips}" }
 output "k8s_minion_ips" { value = "${module.k8s_minion.public_ips}" }
