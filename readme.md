@@ -15,6 +15,8 @@ Once you have those binaries installed you are ready to go
 
 ### Init cluster config
 
+Set default values inside `just_doit.sh`.
+
 This should only be ran once per cluster. Set two env variables when running `just_doit.sh` for the first time.
 
 - DO_TOKEN - digital ocean token
