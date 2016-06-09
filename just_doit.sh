@@ -91,12 +91,12 @@ else
   }"
 
   echo ""
-  echo "Generating cluster_config file with following values ..."
+  echo "Generating terraform.tfvars file with following values ..."
   echo ""
   echo "$PARAMS"
   hbs-templater compile --params "$PARAMS" \
-    --input ./templates/cluster_config_tfvar_tpl \
-    --output . \
+    --input ./terraform.tfvars.tpl \
+    --output ./terraform.tfvars \
     -l --overwrite
 
 fi
