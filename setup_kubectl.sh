@@ -1,6 +1,11 @@
 parent_path=$( cd "$(dirname "${BASH_SOURCE}")" ; pwd -P )
 cd "$parent_path"
 
+if [ !$1 ]; then
+  echo "You must provide the k8s master node ip as first argument."
+  exit 1
+fi
+
 echo ""
 
 if [ $CLEAN_SLATE ]; then
