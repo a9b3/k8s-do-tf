@@ -1,6 +1,17 @@
 #!/bin/bash
 # Run from project root directory
 
+# Check for required ENV var
+if [ -z "$DO_TOKEN" ]; then
+  echo "set DO_TOKEN env variable before running this script"
+  exit 1
+fi
+
+if [ -z "$SSH_FINGERPRINT" ]; then
+  echo "set SSH_FINGERPRINT env variable before running this script"
+  exit 1
+fi
+
 ###############################################################################
 # $CLEAN_SLATE
 ###############################################################################
