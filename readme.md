@@ -15,7 +15,7 @@ Once you have those binaries installed you are ready to go
 
 ### Init cluster config
 
-Set default values inside `just_doit.sh`.
+**IMPORTANT**: EDIT configs in `just_doit.sh` starting line 62.
 
 This should only be ran once per cluster. Set two env variables when running `just_doit.sh` for the first time.
 
@@ -36,7 +36,7 @@ terraform plan
 terraform apply
 ```
 
-This will output the master node ip for setting up kubectl.
+This will output the master node ip for setting up kubectl. Copy master node ip.
 
 ### Setup kubectl
 
@@ -49,3 +49,13 @@ Now you should be able to use kubectl on your local machine to interact with the
 ```sh
 kubectl cluster-info
 ```
+
+## What you get
+
+If you didn't edit anything, 2 etcd nodes, 1 master kubernetes node, 3 minion kubernetes node, and one load balancer node.
+
+The load balancer node is listening for changes in etcd for kubernetes services with exposed nodePort, you will have to get your own domain name and set it up in digital ocean networking.
+
+For ex.
+
+Deploy hello-world service `metadata.name === hello-world` the load balancer will serve `hello-world.yourowndomain.com`.
