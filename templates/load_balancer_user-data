@@ -84,7 +84,8 @@ write-files:
       dest = "/home/core/sites-enabled/app.conf"
 
       keys = [
-        "/registry/services/"
+        "/registry/services/",
+        "/registry/minions/"
       ]
 
       owner = "root"
@@ -101,17 +102,20 @@ write-files:
       {{$custdir := printf "/registry/services/specs/default/%s" $servicename}}
       {{$data := getv $custdir}}
       {{$json := json $data}}
+      {{if (index $json.spec.ports 0).nodePort }}
+      {{$nodePort := (index $json.spec.ports 0).nodePort }}
+      {{if $json.metadata.labels.subdomain }}
 
       upstream {{$servicename}} {
         least_conn;
         {{range $minionip := ls "/registry/minions"}}
-        server {{base $minionip}}:{{ (index $json.spec.ports 0).nodePort }};
+        server {{base $minionip}}:{{$nodePort}};
         {{end}}
       }
 
       server {
         listen 80;
-        server_name {{$servicename}}.${domain_name};
+        server_name {{$json.metadata.labels.subdomain}}.${domain_name};
         location / {
           proxy_pass http://{{$servicename}};
           proxy_redirect off;
@@ -120,6 +124,8 @@ write-files:
           proxy_set_header X-Forwarded_For $proxy_add_x_forwarded_for;
         }
       }
+      {{end}}
+      {{end}}
       {{end}}
 
   - path: /opt/bin/confd-watch.sh
@@ -161,7 +167,7 @@ coreos:
         ExecStartPre=/usr/bin/mkdir -p /opt/bin
         ExecStartPre=/usr/bin/curl -qL \
           -o /opt/bin/confd \
-          https://github.com/kelseyhightower/confd/releases/download/v0.10.0/confd-0.10.0-linux-amd64
+          https://github.com/kelseyhightower/confd/releases/download/v0.11.0/confd-0.11.0-linux-amd64
         ExecStart=/usr/bin/chmod -R +x /opt/bin
         RemainAfterExit=yes
         Type=oneshot
