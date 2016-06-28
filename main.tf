@@ -95,6 +95,27 @@ module "k8s_minion" {
   user_data = "${template_file.k8s_minion.rendered}"
 }
 
+/*****************************************************************************
+ *  external facing load balancer
+ ****************************************************************************/
+
+resource "template_file" "load_balancer" {
+  template = "${file("${path.module}/templates/load_balancer_user-data")}"
+
+  vars {
+    etcd_discovery_token = "${var.etcd_discovery_token}"
+    etcd_ips = "${join(",", formatlist("http://%s:2379", split(",", module.etcd.public_ips)))}"
+  }
+}
+
+module "load_balancer" {
+  source = "./load_balancer"
+
+  ssh_fingerprint = "${var.ssh_fingerprint}"
+  user_data = "${template_file.load_balancer.rendered}"
+}
+
 output "etcd_ips" { value = "${module.etcd.public_ips}" }
 output "k8s_master_ips" { value = "${module.k8s_master.public_ips}" }
 output "k8s_minion_ips" { value = "${module.k8s_minion.public_ips}" }
+output "load_balancer_ip" { value = "${module.load_balancer.public_ip}" }
