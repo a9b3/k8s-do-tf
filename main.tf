@@ -10,6 +10,9 @@ variable "k8s_service_ip" {}
 variable "k8s_service_ip_range" {}
 variable "k8s_version" {}
 variable "pod_network" {}
+variable "domain_name" {
+  default = "staging-samlau.us"
+}
 
 provider "digitalocean" {
   token = "${var.do_token}"
@@ -105,6 +108,7 @@ resource "template_file" "load_balancer" {
   vars {
     etcd_discovery_token = "${var.etcd_discovery_token}"
     etcd_ips = "${join(",", formatlist("http://%s:2379", split(",", module.etcd.public_ips)))}"
+    domain_name = "${var.domain_name}"
   }
 }
 
