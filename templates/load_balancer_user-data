@@ -102,9 +102,9 @@ write-files:
       {{$custdir := printf "/registry/services/specs/default/%s" $servicename}}
       {{$data := getv $custdir}}
       {{$json := json $data}}
-      {{if (index $json.spec.ports 0).nodePort }}
       {{$nodePort := (index $json.spec.ports 0).nodePort }}
       {{if $json.metadata.labels.subdomain }}
+      {{$subdomain := $json.metadata.labels.subdomain}}
 
       upstream {{$servicename}} {
         least_conn;
@@ -115,7 +115,11 @@ write-files:
 
       server {
         listen 80;
-        server_name {{$json.metadata.labels.subdomain}}.${domain_name};
+        {{if eq $subdomain "index"}}
+        server_name www.staging-samlau.us staging-samlau.us;
+        {{else}}
+        server_name {{$subdomain}}.staging-samlau.us;
+        {{end}}
         location / {
           proxy_pass http://{{$servicename}};
           proxy_redirect off;
@@ -124,7 +128,6 @@ write-files:
           proxy_set_header X-Forwarded_For $proxy_add_x_forwarded_for;
         }
       }
-      {{end}}
       {{end}}
       {{end}}
 
