@@ -96,18 +96,25 @@ write-files:
     permissions: '0755'
     owner: 'root'
     content: |
-      {{range $dir := lsdir "/registry/services/endpoints/default"}}
-      upstream {{base $dir}} {
-        {{range $minionip := gets "/registry/minions"}}
-        server {{$minionip.Key}};
+      {{range $dir := ls "/registry/services/endpoints/default"}}
+      {{$servicename := base $dir}}
+      {{$custdir := printf "/registry/services/specs/default/%s" $servicename}}
+      {{$data := getv $custdir}}
+      {{$json := json $data}}
+
+      upstream {{$servicename}} {
+        least_conn;
+        {{range $minionip := ls "/registry/minions"}}
+        server {{base $minionip}}:{{ (index $json.spec.ports 0).nodePort }};
         {{end}}
       }
 
       server {
-        server_name {{base $dir}}.example.com;
+        listen 80;
+        server_name {{$servicename}}.${domain_name};
         location / {
-          proxy_pass {{base $dir}};
-          # proxy_redirect off;
+          proxy_pass http://{{$servicename}};
+          proxy_redirect off;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded_For $proxy_add_x_forwarded_for;
