@@ -1,0 +1,180 @@
+#cloud-config
+# vim: set ft=yaml:
+
+hostname: load_balancer
+
+write-files:
+  - path: /etc/nginx/nginx.conf
+    permissions: '0755'
+    owner: 'root'
+    content: |
+      user www-data;
+      worker_processes 4;
+      pid /run/nginx.pid;
+
+      events {
+        worker_connections 768;
+        # multi_accept on;
+      }
+
+      http {
+        ##
+        # Basic Settings
+        ##
+        log_format upstreamlog '[$time_local] $remote_addr to: $upstream_addr: $request Upstream Response Time: $upstream_response_time Request time: $request_time';
+
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+        # server_tokens off;
+
+        # server_names_hash_bucket_size 64;
+        # server_name_in_redirect off;
+
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        ##
+        # SSL Settings
+        ##
+
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # Dropping SSLv3, ref: POODLE
+        ssl_prefer_server_ciphers on;
+
+        ##
+        # Logging Settings
+        ##
+
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+
+        ##
+        # Gzip Settings
+        ##
+
+        gzip on;
+        gzip_disable "msie6";
+
+        # gzip_vary on;
+        # gzip_proxied any;
+        # gzip_comp_level 6;
+        # gzip_buffers 16 8k;
+        # gzip_http_version 1.1;
+
+        ##
+        # Virtual Host Configs
+        ##
+
+        include /etc/nginx/conf.d/*.conf;
+        include /etc/nginx/sites-enabled/*;
+      }
+
+  - path : /etc/confd/conf.d/nginx.toml
+    permissions: '0755'
+    owner: 'root'
+    content: |
+      [template]
+
+      src = "nginx.tmpl"
+
+      # use this because cannot make /etc/nginx/sites-enabled without
+      # permissions
+      dest = "/home/core/sites-enabled/app.conf"
+
+      keys = [
+        "/registry/services/"
+      ]
+
+      owner = "root"
+      mode = "0755"
+
+      reload_cmd = "/usr/bin/docker kill -s HUP nginx"
+
+  - path : /etc/confd/templates/nginx.tmpl
+    permissions: '0755'
+    owner: 'root'
+    content: |
+      {{range $dir := lsdir "/registry/services/endpoints/default"}}
+      upstream {{base $dir}} {
+        {{range $minionip := gets "/registry/minions"}}
+        server {{$minionip.Key}};
+        {{end}}
+      }
+
+      server {
+        server_name {{base $dir}}.example.com;
+        location / {
+          proxy_pass {{base $dir}};
+          # proxy_redirect off;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded_For $proxy_add_x_forwarded_for;
+        }
+      }
+      {{end}}
+
+  - path: /opt/bin/confd-watch.sh
+    permissions: '0755'
+    owner: 'root'
+    content: |
+      until /opt/bin/confd -onetime -config-file /etc/confd/conf.d/nginx.toml; do
+        echo "[nginx] waiting for confd to refresh nginx.conf"
+        sleep 5
+      done
+
+coreos:
+  etcd2:
+    #generate a new token for each unique cluster from https://discovery.etcd.io/new
+    discovery: https://discovery.etcd.io/${etcd_discovery_token}
+    # multi-region and multi-cloud deployments need to use $public_ipv4
+    advertise-client-urls: http://$public_ipv4:2379
+    initial-advertise-peer-urls: http://$private_ipv4:2380
+    # listen on both the official ports and the legacy ports
+    # legacy ports can be omitted if your application doesn't depend on them
+    listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    listen-peer-urls: http://$private_ipv4:2380,http://$private_ipv4:7001
+  fleet:
+    etcd_servers: ${etcd_ips}
+    public-ip: $public_ipv4
+    metadata: role=load_balancer
+  units:
+    - name: etcd2.service
+      command: start
+    - name: fleet.service
+      command: start
+    - name: download-confd.service
+      command: start
+      content: |
+        [Unit]
+        Description=Download confd binary
+
+        [Service]
+        ExecStartPre=/usr/bin/mkdir -p /opt/bin
+        ExecStartPre=/usr/bin/curl -qL \
+          -o /opt/bin/confd \
+          https://github.com/kelseyhightower/confd/releases/download/v0.10.0/confd-0.10.0-linux-amd64
+        ExecStart=/usr/bin/chmod -R +x /opt/bin
+        RemainAfterExit=yes
+        Type=oneshot
+
+    - name: confd-watch.service
+      command: start
+      content: |
+        [Unit]
+        Description=Start Confd Watch
+        Requires=download-confd.service
+        After=download-confd.service
+
+        [Service]
+        ExecStartPre=/bin/mkdir -p /home/core/sites-enabled
+        ExecStartPre=/bin/docker run --name nginx -d -p 80:80 \
+          -v /etc/nginx/nginx.conf:/etc/nginx/nginx.conf \
+          -v /home/core/sites-enabled:/etc/nginx/sites-enabled \
+          nginx
+        ExecStartPre=until /opt/bin/confd -onetime -config-file /etc/confd/conf.d/nginx.toml; do \
+          echo "[nginx] waiting for confd to refresh nginx.conf" \
+          sleep 5 \
+        done
+        ExecStart=/opt/bin/confd -interval 10 -config-file /etc/confd/conf.d/nginx.toml
