@@ -3,14 +3,15 @@
 
 ETCD_COUNT=${ETCD_COUNT:-2}
 MINION_COUNT=${MINION_COUNT:-2}
+KUBERNETES_VERSION=${KUBERNETES_VERSION}
 
 # Check for required ENV var
-if [ -z "$DO_TOKEN" ]; then
+if [ -z "${DO_TOKEN// }" ]; then
   echo "set DO_TOKEN env variable before running this script"
   exit 1
 fi
 
-if [ -z "$PRIVATE_KEY" ]; then
+if [ -z "${PRIVATE_KEY// }" ]; then
   echo "set PRIVATE_KEY env variable before running this script"
   exit 1
 fi
@@ -77,8 +78,12 @@ else
   ETCD_DISCOVERY_TOKEN=${_ETCD_DISCOVERY_URL##*/}
   echo "Discovery token is ${ETCD_DISCOVERY_TOKEN}"
 
-  echo "Getting kubernetes stable version..."
-  K8S_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+  if [ -z "${KUBERNETES_VERSION}" ]; then
+    echo "Getting kubernetes stable version..."
+    K8S_VERSION=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+  else
+    K8S_VERSION=${KUBERNETES_VERSION}
+  fi
   echo "Kubernetes Stable Version is ${K8S_VERSION}"
   echo ""
 
