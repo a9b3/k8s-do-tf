@@ -98,37 +98,46 @@ write-files:
     owner: 'root'
     content: |
       {{range $dir := ls "/registry/services/endpoints/default"}}
+
       {{$servicename := base $dir}}
       {{$custdir := printf "/registry/services/specs/default/%s" $servicename}}
       {{$data := getv $custdir}}
       {{$json := json $data}}
-      {{$nodePort := (index $json.spec.ports 0).nodePort }}
+
       {{if $json.metadata.labels.subdomain }}
       {{$subdomain := $json.metadata.labels.subdomain}}
 
-      upstream {{$servicename}} {
-        least_conn;
-        {{range $minionip := ls "/registry/minions"}}
-        server {{base $minionip}}:{{$nodePort}};
-        {{end}}
-      }
+        {{if (index $json.spec.ports 0).nodePort}}
+        {{$nodePort := (index $json.spec.ports 0).nodePort }}
 
-      server {
-        listen 80;
-        {{if eq $subdomain "index"}}
-        server_name www.staging-samlau.us staging-samlau.us;
-        {{else}}
-        server_name {{$subdomain}}.staging-samlau.us;
-        {{end}}
-        location / {
-          proxy_pass http://{{$servicename}};
-          proxy_redirect off;
-          proxy_set_header Host $host;
-          proxy_set_header X-Real-IP $remote_addr;
-          proxy_set_header X-Forwarded_For $proxy_add_x_forwarded_for;
+        upstream {{$servicename}} {
+          least_conn;
+          {{range $minionip := ls "/registry/minions"}}
+          server {{base $minionip}}:{{$nodePort}};
+          {{end}}
         }
-      }
+
+        server {
+          listen 80;
+
+          {{if eq $subdomain "index"}}
+          server_name www.staging-samlau.us staging-samlau.us;
+          {{else}}
+          server_name {{$subdomain}}.staging-samlau.us;
+          {{end}}
+
+          location / {
+            proxy_pass http://{{$servicename}};
+            proxy_redirect off;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded_For $proxy_add_x_forwarded_for;
+          }
+        }
+        {{end}}
+
       {{end}}
+
       {{end}}
 
   - path: /opt/bin/confd-watch.sh
