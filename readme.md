@@ -56,6 +56,19 @@ If you didn't edit anything, 2 etcd nodes, 1 master kubernetes node, 3 minion ku
 
 The load balancer node is listening for changes in etcd for kubernetes services with exposed nodePort, you will have to get your own domain name and set it up in digital ocean networking.
 
-For ex.
+ex.
 
-Deploy hello-world service `metadata.name === hello-world` the load balancer will serve `hello-world.yourowndomain.com`.
+If you want a hello-world server that you can reach via hello-world.yourdomainname.com.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world
+  labels:
+    run: hello-world
+    # specify subdomain
+    subdomain: hello-world
+```
+
+Look in examples for more details.
