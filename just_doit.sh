@@ -1,6 +1,9 @@
 #!/bin/bash
 # Run from project root directory
 
+ETCD_COUNT=${ETCD_COUNT:-2}
+MINION_COUNT=${MINION_COUNT:-2}
+
 # Check for required ENV var
 if [ -z "$DO_TOKEN" ]; then
   echo "set DO_TOKEN env variable before running this script"
@@ -60,9 +63,9 @@ else
   # !IMPORTANT
   # SET DEFAULT VALUES HERE
 
-  ETCD_CLUSTER_SIZE=2
+  ETCD_CLUSTER_SIZE=${ETCD_COUNT}
   MASTER_CLUSTER_SIZE=1
-  MINION_CLUSTER_SIZE=2
+  MINION_CLUSTER_SIZE=${MINION_COUNT}
   # Flannel range for docker containers
   POD_NETWORK="10.2.0.0/16"
   SERVICE_IP_RANGE="10.3.0.0/24"
