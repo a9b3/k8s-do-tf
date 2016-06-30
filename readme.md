@@ -54,6 +54,8 @@ kubectl cluster-info
 
 If you didn't edit anything, 2 etcd nodes, 1 master kubernetes node, 3 minion kubernetes node, and one load balancer node.
 
+## External Load Balancer
+
 The load balancer node is listening for changes in etcd for kubernetes services with exposed nodePort, you will have to get your own domain name and set it up in digital ocean networking.
 
 ex.
