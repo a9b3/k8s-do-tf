@@ -44,6 +44,11 @@ ADMIN_CERT=$(pwd)/certs/admin.pem
 
 echo "MASTER_URL=$MASTER_URL"
 
+until curl $MASTER_URL >/dev/null 2>&1; do
+  echo waiting for $MASTER_URL to be ready
+  sleep 5
+done
+
 kubectl config set-cluster default-cluster \
   --server=$MASTER_URL \
   --certificate-authority=$CA_CERT \

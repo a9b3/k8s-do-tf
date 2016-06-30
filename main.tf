@@ -23,7 +23,7 @@ provider "digitalocean" {
  ****************************************************************************/
 
 resource "template_file" "etcd" {
-  template = "${file("${path.module}/templates/etcd_user-data")}"
+  template = "${file("${path.module}/tftemplates/etcd_user-data")}"
 
   vars {
     etcd_discovery_token = "${var.etcd_discovery_token}"
@@ -31,7 +31,7 @@ resource "template_file" "etcd" {
 }
 
 module "etcd" {
-  source = "./etcd"
+  source = "./tfmodules/etcd"
 
   count = "${var.etcd_count}"
   ssh_fingerprint = "${var.ssh_fingerprint}"
@@ -43,7 +43,7 @@ module "etcd" {
  ****************************************************************************/
 
 resource "template_file" "k8s_master" {
-  template = "${file("${path.module}/templates/k8s_master_user-data")}"
+  template = "${file("${path.module}/tftemplates/k8s_master_user-data")}"
 
   vars {
     etcd_discovery_token = "${var.etcd_discovery_token}"
@@ -60,7 +60,7 @@ resource "template_file" "k8s_master" {
 }
 
 module "k8s_master" {
-  source = "./k8s_master"
+  source = "./tfmodules/k8s_master"
 
   count = "${var.k8s_master_count}"
   ssh_fingerprint = "${var.ssh_fingerprint}"
@@ -72,7 +72,7 @@ module "k8s_master" {
  ****************************************************************************/
 
 resource "template_file" "k8s_minion" {
-  template = "${file("${path.module}/templates/k8s_minion_user-data")}"
+  template = "${file("${path.module}/tftemplates/k8s_minion_user-data")}"
 
   vars {
     dns_service_ip = "${var.dns_service_ip}"
@@ -91,7 +91,7 @@ resource "template_file" "k8s_minion" {
 }
 
 module "k8s_minion" {
-  source = "./k8s_minion"
+  source = "./tfmodules/k8s_minion"
 
   count = "${var.k8s_minion_count}"
   ssh_fingerprint = "${var.ssh_fingerprint}"
@@ -103,7 +103,7 @@ module "k8s_minion" {
  ****************************************************************************/
 
 resource "template_file" "load_balancer" {
-  template = "${file("${path.module}/templates/load_balancer_user-data")}"
+  template = "${file("${path.module}/tftemplates/load_balancer_user-data")}"
 
   vars {
     etcd_discovery_token = "${var.etcd_discovery_token}"
@@ -113,7 +113,7 @@ resource "template_file" "load_balancer" {
 }
 
 module "load_balancer" {
-  source = "./load_balancer"
+  source = "./tfmodules/load_balancer"
 
   ssh_fingerprint = "${var.ssh_fingerprint}"
   user_data = "${template_file.load_balancer.rendered}"

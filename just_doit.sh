@@ -114,7 +114,7 @@ else
   echo ""
   echo "$PARAMS"
   hbs-templater compile --params "$PARAMS" \
-    --input ./templates/terraform.tfvars.tpl \
+    --input ./tftemplates/terraform.tfvars.tpl \
     --output ./terraform.tfvars \
     -l --overwrite
 
