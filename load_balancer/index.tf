@@ -3,7 +3,7 @@ variable "user_data" {}
 
 resource "digitalocean_droplet" "load_balancer" {
   image = "coreos-stable"
-  name = "load_balancer"
+  name = "load-balancer"
   region = "sfo1"
   size = "512mb"
   private_networking = true
