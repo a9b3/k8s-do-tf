@@ -41,7 +41,7 @@ This will output the master node ip for setting up kubectl. Copy master node ip.
 ### Setup kubectl
 
 ```sh
-./setup_kubectl.sh <master node ip>
+./setup_kubectl.sh
 ```
 
 Now you should be able to use kubectl on your local machine to interact with the cluster. You might have to wait a couple minutes for servers to finish provisioning.

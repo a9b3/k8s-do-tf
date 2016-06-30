@@ -1,8 +1,11 @@
 parent_path=$( cd "$(dirname "${BASH_SOURCE}")" ; pwd -P )
 cd "$parent_path"
 
-if [ -z "$1" ]; then
-  echo "You must provide the k8s master node ip as first argument."
+MASTER_IP=$(terraform output | grep master_ip | cut -d\  -f3)
+echo $MASTER_IP
+if [[ -z "${MASTER_IP// }" ]]; then
+  echo "MASTER_IP cannot be found from terraform output make sure to run this
+  script after terraform apply"
   exit 1
 fi
 
@@ -34,15 +37,15 @@ fi
 
 echo ""
 
-MASTER_IP=http://$1:8080
+MASTER_URL=http://$MASTER_IP:8080
 CA_CERT=$(pwd)/certs/ca.pem
 ADMIN_KEY=$(pwd)/certs/admin-key.pem
 ADMIN_CERT=$(pwd)/certs/admin.pem
 
-echo "MASTER_IP=$MASTER_IP"
+echo "MASTER_URL=$MASTER_URL"
 
 kubectl config set-cluster default-cluster \
-  --server=$MASTER_IP \
+  --server=$MASTER_URL \
   --certificate-authority=$CA_CERT \
   --client-key=$ADMIN_KEY \
   --client-certificate=$ADMIN_CERT
