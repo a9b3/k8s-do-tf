@@ -7,8 +7,8 @@ if [ -z "$DO_TOKEN" ]; then
   exit 1
 fi
 
-if [ -z "$SSH_FINGERPRINT" ]; then
-  echo "set SSH_FINGERPRINT env variable before running this script"
+if [ -z "$PRIVATE_KEY" ]; then
+  echo "set PRIVATE_KEY env variable before running this script"
   exit 1
 fi
 
