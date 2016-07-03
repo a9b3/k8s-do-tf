@@ -74,3 +74,5 @@ metadata:
 ```
 
 Look in examples for more details.
+
+You can set subdomain to `index` and that will resolve to yourdomainname.com
