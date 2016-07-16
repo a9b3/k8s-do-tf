@@ -73,7 +73,7 @@ write-files:
     content: |
       #!/bin/bash
       /opt/bin/kubectl config set-cluster default-cluster \
-        --server=$COREOS_PUBLIC_IPV4 \
+        --server=$COREOS_PUBLIC_IPV4:8080 \
         --certificate-authority=/etc/ssl/certs/ca.pem \
         --client-key=/etc/ssl/certs/admin-key.pem \
         --client-certificate=/etc/ssl/certs/admin.pem
