@@ -12,6 +12,14 @@ write-files:
     content: |
       ${replace(ca_key_pem, "\n", "\n      ")}
 
+  - path: /etc/ssl/certs/admin-key.pem
+    content: |
+      ${replace(admin_key_pem, "\n", "\n      ")}
+
+  - path: /etc/ssl/certs/admin.pem
+    content: |
+      ${replace(admin_pem, "\n", "\n      ")}
+
   # Used by openssl to generate apiserver-key
   - path: /etc/ssl/certs/openssl.cnf
     content: |
@@ -59,6 +67,24 @@ write-files:
           -extensions v3_req \
           -extfile /etc/ssl/certs/openssl.cnf
       fi
+
+  - path: /opt/bin/setup-kubectl.sh
+    permission: '0755'
+    content: |
+      #!/bin/bash
+      /opt/bin/kubectl config set-cluster default-cluster \
+        --server=$COREOS_PUBLIC_IPV4 \
+        --certificate-authority=/etc/ssl/certs/ca.pem \
+        --client-key=/etc/ssl/certs/admin-key.pem \
+        --client-certificate=/etc/ssl/certs/admin.pem
+      /opt/bin/kubectl config set-credentials default-admin \
+        --certificate-authority=/etc/ssl/certs/ca.pem \
+        --client-key=/etc/ssl/certs/admin-key.pem \
+        --client-certificate=/etc/ssl/certs/admin.pem
+      /opt/bin/kubectl config set-context default-system \
+        --cluster=default-cluster \
+        --user=default-admin
+      /opt/bin/kubectl config use-context default-system
 
 coreos:
   etcd2:
@@ -217,3 +243,16 @@ coreos:
           --master=127.0.0.1:8080 \
         Restart=always
         RestartSec=10
+
+    - name: setup-kubectl.service
+      command: start
+      content: |
+        [Unit]
+        Description=Setup kubectl
+        Requires=kube-apiserver.service download-kubernetes-binaries.service generate-certs.service
+        After=kube-apiserver.service download-kubernetes-binaries.service generate-certs.service
+
+        [Service]
+        ExecStart=/opt/bin/setup-kubectl.sh
+        RemainAfterExit=yes
+        Type=oneshot

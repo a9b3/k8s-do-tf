@@ -56,6 +56,8 @@ resource "template_file" "k8s_master" {
 
     ca_key_pem = "${file("${path.module}/certs/ca-key.pem")}"
     ca_pem = "${file("${path.module}/certs/ca.pem")}"
+    admin_key_pem = "${file("${path.module}/certs/admin-key.pem")}"
+    admin_pem = "${file("${path.module}/certs/admin.pem")}"
   }
 }
 

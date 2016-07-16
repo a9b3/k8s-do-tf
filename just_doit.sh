@@ -48,6 +48,21 @@ else
   cfssl gencert -initca ../ca-csr.json | cfssljson -bare ca -
   cd ..
   echo "Created ca-key.pem, ca.pem in ./certs directory"
+  echo ""
+
+  echo "Creating cluster admin keypair ..."
+  openssl genrsa -out ./certs/admin-key.pem 2048
+
+  openssl req -new -key ./certs/admin-key.pem \
+    -out ./certs/admin.csr \
+    -subj "/CN=kube-admin"
+
+  openssl x509 -req -in ./certs/admin.csr \
+    -CA ./certs/ca.pem \
+    -CAkey ./certs/ca-key.pem \
+    -CAcreateserial \
+    -out ./certs/admin.pem \
+    -days 365
 fi
 
 echo ""
