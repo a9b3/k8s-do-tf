@@ -76,3 +76,16 @@ metadata:
 Look in examples for more details.
 
 You can set subdomain to `index` and that will resolve to yourdomainname.com
+
+## Kontinuum
+
+Would like to make this more automated, but as of now this is pretty manual. 
+
+- ssh into kubernetes master node
+- run /opt/bin/setup-kubectl.sh
+- run `docker run --name redis -d -p 6379:6379 redis`
+- run `docker run -e "SUPER_INSECURE_KEY=<blah>" -d -p 8080:80 --name kontinuum esayemm/kontinuum:0.1.0`
+
+Get token from `POST http://<master_ip>/get_token`.
+
+Now you can hook this up to continious deployment.
