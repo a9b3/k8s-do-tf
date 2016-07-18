@@ -97,6 +97,24 @@ write-files:
     permissions: '0755'
     owner: 'root'
     content: |
+      upstream kontinuum {
+        least_conn;
+        server 104.236.153.35;
+      }
+
+      server {
+        listen 80;
+        server_name kontinuum.staging-samlau.us;
+
+        location / {
+          proxy_pass http://kontinuum;
+          proxy_redirect off;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded_For $proxy_add_x_forwarded_for;
+        }
+      }
+
       {{range $dir := ls "/registry/services/endpoints/default"}}
 
       {{$servicename := base $dir}}

@@ -15,7 +15,7 @@ Once you have those binaries installed you are ready to go
 
 ### Init cluster config
 
-**IMPORTANT**: EDIT configs in `just_doit.sh` starting line 62.
+**IMPORTANT**: EDIT configs in `just_doit.sh` starting line 62. ALSO edit `load_balancer_user-data` to point at the correct kontinuum server, or take it out if none.
 
 This should only be ran once per cluster. Set two env variables when running `just_doit.sh` for the first time.
 
