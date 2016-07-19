@@ -80,3 +80,18 @@ You can set subdomain to `index` and that will resolve to yourdomainname.com
 ## Kontinuum
 
 To set up kontinuum for continious deployment read more [here](https://github.com/esayemm/kontinuum)
+
+## Databases
+
+```sh
+scp ./setup_database.sh root@<database_ip>:~/setup_database.sh
+ssh root@<database_ip>
+./setup_database.sh
+vim /etc/mongod.conf  
+# comment out bindIp
+service mongod restart
+
+vim /etc/redis/redis.conf
+# comment out bind
+service redis-server restart
+```

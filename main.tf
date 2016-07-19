@@ -121,7 +121,23 @@ module "load_balancer" {
   user_data = "${template_file.load_balancer.rendered}"
 }
 
+/*****************************************************************************
+ *  database
+ ****************************************************************************/
+
+resource "digitalocean_droplet" "database" {
+  image = "ubuntu-14-04-x64"
+  name = "database"
+  region = "sfo1"
+  size = "512mb"
+  private_networking = true
+  ssh_keys = [
+    "${var.ssh_fingerprint}"
+  ]
+}
+
 output "etcd_ips" { value = "${module.etcd.public_ips}" }
 output "k8s_master_ips" { value = "${module.k8s_master.public_ips}" }
 output "k8s_minion_ips" { value = "${module.k8s_minion.public_ips}" }
 output "load_balancer_ip" { value = "${module.load_balancer.public_ip}" }
+output "database_ip" { value = "${digitalocean_droplet.database.ipv4_address}" }
